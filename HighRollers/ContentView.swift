@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.accessibilityVoiceOverEnabled) var accessibilityVoiceOverEnabled
     let diceTypes = [4, 6, 8, 10, 12, 20, 100]
 
     @AppStorage("selectedDiceType") var selectedDiceType = 6
@@ -53,6 +54,8 @@ struct ContentView: View {
                                 .padding(5)
                         }
                     }
+                    .accessibilityElement()
+                    .accessibilityLabel("Latest roll: \(currentResult.description)")
                 }
                 .disabled(stoppedDice < currentResult.rolls.count)
 
@@ -62,8 +65,10 @@ struct ContentView: View {
                             VStack(alignment: .leading) {
                                 Text("\(result.number) x D\(result.type)")
                                     .font(.headline)
-                                Text(result.rolls.map(String.init).joined(separator: ", "))
+                                Text(result.description)
                             }
+                            .accessibilityElement()
+                            .accessibilityLabel("\(result.number) D\(result.type), \(result.description)")
                         }
                     }
                 }
@@ -73,12 +78,19 @@ struct ContentView: View {
                 updateDice()
             }
             .onAppear(perform: load)
+            .sensoryFeedback(.impact, trigger: savedResults.count)
         }
     }
 
     func rollDice() {
         currentResult = DiceResult(type: selectedDiceType, number: numberToRoll)
-        stoppedDice = -20
+        if accessibilityVoiceOverEnabled {
+            stoppedDice = numberToRoll
+            savedResults.insert(currentResult, at: 0)
+            save()
+        } else {
+            stoppedDice = -20
+        }
     }
 
     func updateDice() {
