@@ -13,6 +13,12 @@ struct ContentView: View {
     @AppStorage("selectedDiceType") var selectedDiceType = 6
     @AppStorage("numberToRoll") var numberToRoll = 4
 
+    @State private var currentResult = DiceResult(type: 0, number: 0)
+
+    let columns: [GridItem] = [
+        .init(.adaptive(minimum: 60))
+    ]
+
     var body: some View {
         NavigationStack {
             Form {
@@ -27,13 +33,29 @@ struct ContentView: View {
                     Stepper("Number of dice: \(numberToRoll)", value: $numberToRoll, in: 1 ... 20)
 
                     Button("Roll them!", action: rollDice)
+                } footer: {
+                    LazyVGrid(columns: columns) {
+                        ForEach(0 ..< currentResult.rolls.count, id: \.self) { rollNumber in
+                            Text(String(currentResult.rolls[rollNumber]))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .aspectRatio(1, contentMode: .fit)
+                                .foregroundStyle(.white)
+                                .background(.black)
+                                .clipShape(.rect(cornerRadius: 10))
+                                .shadow(color: .white, radius: 3)
+                                .font(.title)
+                                .padding(5)
+                        }
+                    }
                 }
             }
             .navigationTitle("High Rollers")
         }
     }
 
-    func rollDice() {}
+    func rollDice() {
+        currentResult = DiceResult(type: selectedDiceType, number: numberToRoll)
+    }
 }
 
 #Preview {
