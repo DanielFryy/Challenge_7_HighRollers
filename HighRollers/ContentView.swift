@@ -18,6 +18,9 @@ struct ContentView: View {
     let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     @State private var stoppedDice = 0
 
+    let savePath = URL.documentsDirectory.appending(path: "SavedRolls.json")
+    @State private var savedResults = [DiceResult]()
+
     let columns: [GridItem] = [
         .init(.adaptive(minimum: 60))
     ]
@@ -52,11 +55,24 @@ struct ContentView: View {
                     }
                 }
                 .disabled(stoppedDice < currentResult.rolls.count)
+
+                if savedResults.isEmpty == false {
+                    Section("Previous results") {
+                        ForEach(savedResults) { result in
+                            VStack(alignment: .leading) {
+                                Text("\(result.number) x D\(result.type)")
+                                    .font(.headline)
+                                Text(result.rolls.map(String.init).joined(separator: ", "))
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("High Rollers")
             .onReceive(timer) { _ in
                 updateDice()
             }
+            .onAppear(perform: load)
         }
     }
 
@@ -74,6 +90,25 @@ struct ContentView: View {
         }
 
         stoppedDice += 1
+
+        if stoppedDice == numberToRoll {
+            savedResults.insert(currentResult, at: 0)
+            save()
+        }
+    }
+
+    func load() {
+        if let data = try? Data(contentsOf: savePath) {
+            if let results = try? JSONDecoder().decode([DiceResult].self, from: data) {
+                savedResults = results
+            }
+        }
+    }
+
+    func save() {
+        if let data = try? JSONEncoder().encode(savedResults) {
+            try? data.write(to: savePath, options: [.atomic, .completeFileProtection])
+        }
     }
 }
 
